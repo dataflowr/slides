@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>13. Siamese Networks [Andrei Bursuc]</title>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <link rel="stylesheet" href="./assets/katex.min.css">  
+   <link rel="stylesheet" type="text/css" href="./assets/slides.css">
+   <link rel="stylesheet" type="text/css" href="./assets/grid.css">    
+  </head>
+  <body>
+
+<textarea id="source">
+
+
+layout: true
+
+.center.footer[Marc LELARGE and Andrei BURSUC | Deep Learning Do It Yourself | 13. Siamese Networks]
+
+---
+
+class: center, middle, title-slide
+count: false
+
+# 13. Siamese Networks and Representation Learning
+
+<br/>
+<br/>
+.bold[Andrei Bursuc ]
+<br/>
+
+
+url: https://dataflowr.github.io/website/
+<!-- url: https://abursuc.github.io//slides/polytechnique/03_cnns_siamese.html -->
+.citation[
+With slides from  F. Fleuret, O. Grisel, E. Oyallon, G. Louppe, Y. Avrithis ...]
+
+
+---
+
+# Siamese networks
+
+.center.width-60[![](images/part13/lfw.png)]
+
+- **Recognition:** given a face, classify among K possible persons
+- **Verification:** verify that two faces belongs to the same person
+
+
+A verification system can be implemented as a similarity measure. If it's really good, useful for recognition.
+
+
+---
+
+class: middle, center
+
+.big[Training a classifier with so many classes and so few samples per classes is challenging.]
+
+.hidden.big[In addition, for such use-cases, new classes can appear on the fly anytime.]
+
+---
+
+count: false
+class: middle, center
+
+.big[Training a classifier with so many classes and so few samples per classes is challenging.]
+
+.big[In addition, for such use-cases, new classes can appear on the fly anytime.]
+
+---
+
+class: middle, center
+
+.big[Instead of training a network to do classification, we can train it to compute useful features from images, allowing us to measure similarities/dissimilarities between images.]
+
+
+---
+
+# Siamese architecture
+
+.center.width-60[![](images/part13/siamese_1.png)]
+
+- an input sample is a _pair_ $( \mathbf{x}\_i, \mathbf{x}\_j)$
+
+.citation[ S. Chopra et al.,Learning a similarity metric discriminatively, with application to face verification, CVPR 2005]
+---
+
+# Siamese architecture
+
+.center.width-60[![](images/part13/siamese_2.png)]
+
+- an input sample is a _pair_ $( \mathbf{x}\_i, \mathbf{x}\_j)$
+- both $\mathbf{x}\_i$, $\mathbf{x}\_j$ go through the _same_ function $f$ with _shared_ parameters $\theta$
+
+.citation[ S. Chopra et al.,Learning a similarity metric discriminatively, with application to face verification, CVPR 2005]
+
+---
+
+# Siamese architecture
+
+.center.width-60[![](images/part13/siamese_3.png)]
+
+- an input sample is a _pair_ $( \mathbf{x}\_i, \mathbf{x}\_j)$
+- both $\mathbf{x}\_i$, $\mathbf{x}\_j$ go through the _same_ function $f$ with _shared_ parameters $\theta$
+- loss $\ell\_{ij}$ is measured on output pair $( \mathbf{y}\_i, \mathbf{y}\_j)$ and target $t\_{ij}$
+
+.citation[ S. Chopra et al.,Learning a similarity metric discriminatively, with application to face verification, CVPR 2005]
+---
+
+# Contrastive loss
+
+.center.width-60[![](images/part13/contrastive_1.png)]
+
+- input samples $\mathbf{x}\_i$, output vectors $\mathbf{y}\_i= f(\mathbf{x}\_i; \theta)$, target variables $t\_{ij}=\mathbb{1}[\text{sim}(\mathbf{x}\_i, \mathbf{x}\_j)]$
+- _contrastive loss_ is a function of distance $\Vert \mathbf{y}\_i - \mathbf{y}\_j \Vert$ only 
+ 
+ $$\ell\_{ij} = L((\mathbf{y}\_i,\mathbf{y}\_j), t\_{ij} ) = \ell (\Vert \mathbf{y}\_i - \mathbf{y}\_j \Vert,  t\_{ij})$$
+
+.citation[ R. Hadsell et al., Dimensionality reduction by learning an invariant mapping, CVPR 2006]
+---
+
+# Contrastive loss
+
+.center.width-60[![](images/part13/contrastive_2.png)]
+
+- input samples $\mathbf{x}\_i$, output vectors $\mathbf{y}\_i= f(\mathbf{x}\_i; \theta)$, target variables $t\_{ij}=\mathbb{1}[\text{sim}(\mathbf{x}\_i, \mathbf{x}\_j)]$
+- _contrastive loss_ is a function of distance $\Vert \mathbf{y}\_i - \mathbf{y}\_j \Vert$ only 
+ 
+ $$\ell\_{ij} = L((\mathbf{y}\_i,\mathbf{y}\_j), t\_{ij} ) = \ell (\Vert \mathbf{y}\_i - \mathbf{y}\_j \Vert,  t\_{ij})$$
+
+- _similar_ samples are _attracted_
+
+$$\ell(x,t)=\textcolor{red}{t\ell^{+}} + (1-t)\ell^{-}(x) = \textcolor{red}{t x^2} + (1-t)[m-x]^2\_+$$
+
+.citation[ R. Hadsell et al., Dimensionality reduction by learning an invariant mapping, CVPR 2006]
+
+---
+
+# Contrastive loss
+
+.center.width-60[![](images/part13/contrastive_3.png)]
+
+- input samples $\mathbf{x}\_i$, output vectors $\mathbf{y}\_i= f(\mathbf{x}\_i; \theta)$, target variables $t\_{ij}=\mathbb{1}[\text{sim}(\mathbf{x}\_i, \mathbf{x}\_j)]$
+- _contrastive loss_ is a function of distance $\Vert \mathbf{y}\_i - \mathbf{y}\_j \Vert$ only 
+ 
+ $$\ell\_{ij} = L((\mathbf{y}\_i,\mathbf{y}\_j), t\_{ij} ) = \ell (\Vert \mathbf{y}\_i - \mathbf{y}\_j \Vert,  t\_{ij})$$
+
+- _dissimilar_ samples are _repelled_ if closer than margin $m$
+
+$$\ell(x,t)=t\ell^{+} + (1-t)\textcolor{red}{\ell^{-}(x)} = t x^2 + (1-t)\textcolor{red}{[m-x]^2\_+}$$
+
+.citation[ R. Hadsell et al., Dimensionality reduction by learning an invariant mapping, CVPR 2006]
+
+---
+
+# Training siamese networks
+
+## Data collection and loading
+- sample positive pairs $( \mathbf{x}\_i, \mathbf{x}\_j)$, with samples coming from the same class
+- sample negative pairs $( \mathbf{x}\_i, \mathbf{x}\_j)$, with samples of different classes
+- combine pairs of samples in larger mini-batches
+- __it's highly important to properly tune mini-batches__: balance positives and negatives, discard easy negatives and positives and focus on more difficult ones.
+
+
+.hidden[
+## Learning
+- pass all images through the two networks with shared parameters (in fact the same network)
+- backpropagate through the two networks and sum gradients from the two samples
+]
+
+---
+count: false
+# Training siamese networks
+
+## Data collection and loading
+- sample positive pairs $( \mathbf{x}\_i, \mathbf{x}\_j)$, with samples coming from the same class
+- sample negative pairs $( \mathbf{x}\_i, \mathbf{x}\_j)$, with samples of different classes
+- combine pairs of samples in larger mini-batches
+- __it's highly important to properly tune mini-batches__: balance positives and negatives, discard easy negatives and positives and focus on more difficult ones.
+
+## Learning
+- pass all images through the two networks with shared parameters (in fact the same network)
+- backpropagate through the two networks and sum gradients from the two samples
+
+---
+
+# Triplet architecture
+
+.grid[
+.kol-6-12[
+.center.width-100[![](images/part13/triplet_1.png)]
+]
+.kol-6-12[
+- an input sample is a _triple_ $(\mathbf{x}\_i, \mathbf{x}\_i^+, \mathbf{x}\_i^-)$
+]
+]
+.citation[ Wang et al., Learning fine-grained image similarity with deep ranking, CVPR 2014]
+---
+
+# Triplet architecture
+
+.grid[
+.kol-6-12[
+.center.width-100[![](images/part13/triplet_2.png)]
+]
+.kol-6-12[
+
+- an input sample is a _triple_ $(\mathbf{x}\_i, \mathbf{x}\_i^+, \mathbf{x}\_i^-)$
+- $\mathbf{x}\_i, \mathbf{x}\_i^+, \mathbf{x}\_i^-$ go through the _same_ function $f$ with _shared_ parameters $\theta$
+]
+]
+.citation[ Wang et al., Learning fine-grained image similarity with deep ranking, CVPR 2014]
+---
+
+# Triplet architecture
+
+.grid[
+.kol-6-12[
+.center.width-100[![](images/part13/triplet_3.png)]
+]
+.kol-6-12[
+
+- an input sample is a _triple_ $(\mathbf{x}\_i, \mathbf{x}\_i^+, \mathbf{x}\_i^-)$
+- $\mathbf{x}\_i, \mathbf{x}\_i^+, \mathbf{x}\_i^-$ go through the _same_ function $f$ with _shared_ parameters $\theta$
+- loss $\ell\_i$ is measured on output triple $(\mathbf{y}\_i, \mathbf{y}\_i^+, \mathbf{y}\_i^-)$ 
+]
+]
+.citation[ Wang et al., Learning fine-grained image similarity with deep ranking, CVPR 2014]
+
+---
+# Triplet loss
+
+- input _anchor_ $\mathbf{x}\_i$, output vector $\mathbf{y}\_i = f(\mathbf{x}\_i; \theta)$
+- positive $\mathbf{y}\_i^+ = f(\mathbf{x}\_i^+; \theta)$, negative $\mathbf{y}\_i^- = f(\mathbf{x}\_i^-; \theta)$ 
+- _triplet loss_ is a function of distances $\Vert \mathbf{y}\_i - \mathbf{y}\_i^+ \Vert$, $\Vert \mathbf{y}\_i - \mathbf{y}\_i^- \Vert$ only
+
+$$\ell\_i = L(\mathbf{y}\_i, \mathbf{y}\_i^+, \mathbf{y}\_i^-) =\ell(\Vert \mathbf{y}\_i - \mathbf{y}\_i^+ \Vert, \Vert \mathbf{y}\_i - \mathbf{y}\_i^- \Vert)$$
+
+$$\ell(x^+, x^-) = [m + (x^+)^2 - (x^-)^2]\_+$$
+
+so distance $\Vert \mathbf{y}\_i - \mathbf{y}\_i^+ \Vert$ should be less than $\Vert \mathbf{y}\_i - \mathbf{y}\_i^- \Vert$ by _margin_ $m$
+
+.citation[ Wang et al., Learning fine-grained image similarity with deep ranking, CVPR 2014]
+
+---
+# Triplet loss
+
+- input _anchor_ $\mathbf{x}\_i$, output vector $\mathbf{y}\_i = f(\mathbf{x}\_i; \theta)$
+- positive $\mathbf{y}\_i^+ = f(\mathbf{x}\_i^+; \theta)$, negative $\mathbf{y}\_i^- = f(\mathbf{x}\_i^-; \theta)$ 
+- _triplet loss_ is a function of distances $\Vert \mathbf{y}\_i - \mathbf{y}\_i^+ \Vert$, $\Vert \mathbf{y}\_i - \mathbf{y}\_i^- \Vert$ only
+
+$$\ell\_i = L(\mathbf{y}\_i, \mathbf{y}\_i^+, \mathbf{y}\_i^-) =\ell(\Vert \mathbf{y}\_i - \mathbf{y}\_i^+ \Vert, \Vert \mathbf{y}\_i - \mathbf{y}\_i^- \Vert)$$
+
+$$\ell(x^+, x^-) = [m + (x^+)^2 - (x^-)^2]\_+$$
+
+so distance $\Vert \mathbf{y}\_i - \mathbf{y}\_i^+ \Vert$ should be less than $\Vert \mathbf{y}\_i - \mathbf{y}\_i^- \Vert$ by _margin_ $m$
+
+- by taking _two pairs_ $(\mathbf{x}\_i, \mathbf{x}\_i^+)$ and $(\mathbf{x}\_i, \mathbf{x}\_i^-)$ at a time with targets $1$, $0$ respectively, the _contrastive loss_ can be writen similarly
+$$\ell(x^+, x^-) = (x^+)^2 + [m-x^-]^2\_+$$
+so distance $\Vert \mathbf{y}\_i - \mathbf{y}\_i^+ \Vert$ should be small and $\Vert \mathbf{y}\_i - \mathbf{y}\_i^- \Vert$ larger than $m$ 
+
+.citation[ Wang et al., Learning fine-grained image similarity with deep ranking, CVPR 2014]
+
+
+---
+count: false
+# Training with the triplet loss
+
+$$\ell\_i = L(\mathbf{y}\_i, \mathbf{y}\_i^+, \mathbf{y}\_i^-) =\ell(\Vert \mathbf{y}\_i - \mathbf{y}\_i^+ \Vert, \Vert \mathbf{y}\_i - \mathbf{y}\_i^- \Vert)$$
+
+- sample a mini-batch of triplets$(\mathbf{x}\_i, \mathbf{x}\_i^+, \mathbf{x}\_i^-)$
+- forward pass on all $3$ networks
+- compute loss over all samples and sum gradients for updating weights
+
+---
+
+# Siamese networks
+
+.grid[
+.kol-6-12[
+
+```
+class SiameseNet(nn.Module):
+    def __init__(self, embedding_net):
+        super(SiameseNet, self).__init__()
+        self.embedding_net = embedding_net
+
+    def forward(self, x1, x2):
+        output1 = self.embedding_net(x1)
+        output2 = self.embedding_net(x2)
+        return output1, output2
+
+    def get_embedding(self, x):
+        return self.embedding_net(x)
+```
+]
+
+.kol-6-12[
+
+```
+class TripletNet(nn.Module):
+    def __init__(self, embedding_net):
+        super(TripletNet, self).__init__()
+        self.embedding_net = embedding_net
+
+    def forward(self, x1, x2, x3):
+        output1 = self.embedding_net(x1)
+        output2 = self.embedding_net(x2)
+        output3 = self.embedding_net(x3)
+        return output1, output2, output3
+
+    def get_embedding(self, x):
+        return self.embedding_net(x)
+```
+]
+]
+---
+
+count:false
+
+# Siamese networks
+
+.grid[
+.kol-6-12[
+
+```
+class SiameseNet(nn.Module):
+    def __init__(self, embedding_net):
+        super(SiameseNet, self).__init__()
+        self.embedding_net = embedding_net
+
+    def forward(self, x1, x2):
+*       output1 = self.embedding_net(x1)
+*       output2 = self.embedding_net(x2)
+        return output1, output2
+
+    def get_embedding(self, x):
+        return self.embedding_net(x)
+```
+]
+
+.kol-6-12[
+
+```
+class TripletNet(nn.Module):
+    def __init__(self, embedding_net):
+        super(TripletNet, self).__init__()
+        self.embedding_net = embedding_net
+
+    def forward(self, x1, x2, x3):
+*       output1 = self.embedding_net(x1)
+*       output2 = self.embedding_net(x2)
+*       output3 = self.embedding_net(x3)
+        return output1, output2, output3
+
+    def get_embedding(self, x):
+        return self.embedding_net(x)
+```
+]
+]
+
+---
+
+# Hard negative sampling
+
+After a few epochs, If $(\mathbf{x}\_i, \mathbf{x}\_i^{+}, \mathbf{x}\_i^{-})$ are chosen randomly, it will be easy to satisfy the inequality in the loss.
+
+--
+
+Gradients in one batch quickly become almost $0$ except for **hard cases**.
+Random sampling is inefficient to find these hard cases
+
+--
+count: false
+
+- **Hard triplet sampling:** sample $\mathbf{x}\_i^{-}$ such that:
+
+$$||\mathbf{y} - \mathbf{y}^{+}|| > ||\mathbf{y} - \mathbf{y}^{-}|| + m$$
+
+- **Semi Hard triplet sampling:** sample $\mathbf{x}\_i^{-}$ such that:
+
+$$||\mathbf{y} - \mathbf{y}^{+}|| > ||\mathbf{y} - \mathbf{y}^{-}||$$
+
+---
+
+class: middle, center
+
+# Applications
+
+---
+
+
+# Face recognition
+
+.center.width-30[![](images/part13/facenet.png)]
+- A threshold is computed on test set to decide which faces are the same
+- Best model achieves 99.6% verification accuracy on Labeled Faces in the Wild dataset
+- Works well even with non-camera facing faces
+
+.citation[F. Schroff et al., Facenet: A unified embedding for face recognition and clustering, CVPR 2015 ]
+
+---
+
+# Deep image retrieval
+
+.center.width-70[![](images/part13/dir_1.png)]
+
+.citation[A. Gordo et al., Deep Image Retrieval: Learning Global Representations for Image Search, ECCV 2016 ]
+
+- query $\mathbf{x}\_i$, relevant $\mathbf{x}\_i^+$ (same building), irrelevant $\mathbf{x}\_i^-$ (other building)
+
+---
+count: false
+# Deep image retrieval
+
+.center.width-70[![](images/part13/dir_2.png)]
+
+.citation[A. Gordo et al., Deep Image Retrieval: Learning Global Representations for Image Search, ECCV 2016 ]
+
+- query $\mathbf{x}\_i$, relevant $\mathbf{x}\_i^+$ (same building), irrelevant $\mathbf{x}\_i^-$ (other building)
+
+---
+
+count: false
+# Deep image retrieval
+
+.center.width-70[![](images/part13/dir_3.png)]
+
+.citation[A. Gordo et al., Deep Image Retrieval: Learning Global Representations for Image Search, ECCV 2016 ]
+
+- query $\mathbf{x}\_i$, relevant $\mathbf{x}\_i^+$ (same building), irrelevant $\mathbf{x}\_i^-$ (other building)
+- triplet loss is evaluated on output $(\mathbf{y}\_i, \mathbf{y}\_i^+, \mathbf{y}\_i^-)$
+
+---
+
+# Patch matching
+
+.center.width-45[![](images/part13/phototour.png)]
+
+---
+
+# Patch matching 
+
+.center.width-70[![](images/part13/local_descriptors_2.png)]
+
+
+.credit[Figure credit: A. Vedaldi]
+---
+
+# Patch matching 
+
+.center.width-60[![](images/part13/local_descriptors_8.png)]
+
+
+.credit[Figure credit: A. Vedaldi]
+---
+
+# Image reconstruction
+
+
+.center.width-70[![](images/part13/sfm.png)]
+.caption[Structure from motion]
+
+.citation[F. Radenovic et al., CNN Image Retrieval Learns From BoW: Unsupervised Fine-Tuning with Hard Examples, ECCV 2016 <br/>
+ Schonberger et al., From Single Image Query to Detailed 3D Reconstruction, CVPR 2015.]
+
+---
+
+# Person re-identification
+
+.grid[
+.kol-6-12[
+.center.width-70[![](images/part13/reid1.png)]
+
+]
+.kol-6-12[
+]
+]
+
+.citation[J. Almazan et al., Re-ID Done Right: towards Good Practices for Person re-Identification, arXiv 2018]
+
+
+---
+
+count: false
+
+# Person re-identification
+
+.grid[
+.kol-6-12[
+.center.width-70[![](images/part13/reid1.png)]
+
+]
+.kol-6-12[
+.center.width-70[![](images/part13/reid2.png)]
+]
+]
+
+.citation[J. Almazan et al., Re-ID Done Right: towards Good Practices for Person re-Identification, arXiv 2018]
+
+
+---
+
+class: middle, center
+
+
+.big[Going beyond pairs and triplets ...]
+
+
+---
+
+# N-pair loss 
+
+.center.width-70[![](images/part13/n-pair-loss.png)]
+.caption[Deep metric learning with (left) triplet loss and (right) $(N+1)$-tuplet loss. <br/>$(N+1)$-tuplet loss pushes $N-1$ negative examples all at once.]
+
+
+- generalize *triplet-loss* with **N-pair loss**
+- sample pairs of similar examples and use as negative all the other samples in the mini-batch
+
+
+.citation[K. Sohn,  Improved Deep Metric Learning with Multi-class N-pair Loss Objective, NeurIPS 2016]
+
+---
+
+# Histogram loss 
+
+.center.width-70[![](images/part13/histogram-loss.jpg)]
+
+- for a mini-batch compute all pairwise positive similarities and negative similarities
+
+- compile similarities into distributions (differentiable approximations of distributions)
+
+- the loss aims to repell the two distributions
+
+.citation[E. Ustinova et al., Learning Deep Embeddings with Histogram Loss, NeurIPS 2016]
+
+---
+
+class: middle, center
+
+## Few classes, few labels
+
+---
+
+# Prototypical networks
+
+Learns to extract class prototype vectors:
+- class prototype vector = mean feature vector of training examples
+- classify test example to the class with the closest prototype ($L\_2$ distance)
+- prototype vectors are similar to classification weights of networks
+
+.grid[
+
+.kol-6-12[
+Prototype vector of $k$-th class:
+
+$$c\_k=\frac{1}{|S\_k|} \sum\_{(x\_i, y\_i) \in S\_k} f\_{\theta}(x\_i)$$
+
+Classification for example $x$:
+
+$$p\_{\theta}(y=k|x) = \frac{\exp(-d(f\_{\theta}(x), c\_k))}{\sum\_{k'}\exp(-d(f\_{\theta}(x), c\_{k'}))}$$
+]
+
+.kol-6-12[
+.center.width-70[![](images/part13/pn.png)]
+]
+
+]
+
+.citation[J Snell et al., Prototypical Networks for Few-shot Learning, NeurIPS 2017]
+
+---
+# Take-aways
+
+- .big[A specific type of architectures suitable for representation learning]
+
+- .big[In case of many classes and class imbalance, siamese networks might be better, while for standard settings use classification]
+
+- .big[Modern methods leverage siamese networks for unsupervised learning, where the network must recognize a perturbed sample in a large pool of negatives.]
+
+---
+
+class: end-slide, center
+count: false
+
+The end.
+
+
+</textarea> 
+  <script src="./assets/remark-latest.min.js"></script>
+  <script src="./assets/auto-render.min.js"></script>
+  <script src="./assets/katex.min.js"></script>
+  <script type="text/javascript">
+    function getParameterByName(name, url) {
+          if (!url) url = window.location.href;
+          name = name.replace(/[\[\]]/g, "\\$&");
+          var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+              results = regex.exec(url);
+          if (!results) return null;
+          if (!results[2]) return '';
+          return decodeURIComponent(results[2].replace(/\+/g, " "));
+      }
+
+      // var options = {sourceUrl: getParameterByName("p"),
+      //                highlightLanguage: "python",
+      //                // highlightStyle: "tomorrow",
+      //                // highlightStyle: "default",
+      //                highlightStyle: "github",
+      //                // highlightStyle: "googlecode",
+      //                // highlightStyle: "zenburn",
+      //                highlightSpans: true,
+      //                highlightLines: true,
+      //                ratio: "16:9"};
+      var options = {sourceUrl: getParameterByName("p"),
+                     highlightLanguage: "python",
+                     highlightStyle: "github",
+                     highlightSpans: true,
+                     highlightLines: true,
+                     ratio: "16:9",
+                     slideNumberFormat: (current, total) => `
+        <div class="progress-bar-container">${current}/${total}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/><br/>
+          <div class="progress-bar" style="width: ${current/total*100}%"></div>
+        </div>
+      `};
+
+       var renderMath = function() {
+          renderMathInElement(document.body, {delimiters: [ // mind the order of delimiters(!?)
+              {left: "$$", right: "$$", display: true},
+              {left: "$", right: "$", display: false},
+              {left: "\\[", right: "\\]", display: true},
+              {left: "\\(", right: "\\)", display: false},
+          ]});
+      }
+    var slideshow = remark.create(options, renderMath);
+  </script>
+  </body>
+</html>
