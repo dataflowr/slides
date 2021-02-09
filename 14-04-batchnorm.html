@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>14.4 - BatchNorm [Andrei Bursuc]</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link rel="stylesheet" href="./assets/katex.min.css">  
+    <link rel="stylesheet" type="text/css" href="./assets/slides.css">
+    <link rel="stylesheet" type="text/css" href="./assets/grid.css">
+  </head>
+  <body>
+
+<textarea id="source">
+
+layout: true
+
+.center.footer[Marc LELARGE and Andrei BURSUC | Deep Learning Do It Yourself | 14.4 BatchNorm]
+
+---
+
+class: center, middle, title-slide
+count: false
+
+## Going Deeper 
+# 14.4 BatchNorm 
+
+<br/>
+<br/>
+.bold[Andrei Bursuc ]
+<br/>
+
+
+url: https://dataflowr.github.io/website/
+
+.citation[
+With slides from A. Karpathy, F. Fleuret,  G. Louppe, C. Ollion, O. Grisel, Y. Avrithis ...]
+
+
+---
+
+class: middle
+
+.bigger[Previously we saw that maintaining proper statistics of the activations and derivatives was a critical issue to allow the training of deep architectures.]
+
+.hidden.bigger[We can addres this by: 
+
+($1$) crafting smarter _weight initialization_ techniques
+]
+
+.hidden.bigger[ 
+($2$) explicitly _forcing the activation statistics_ during the forward pass by re-normalizing them.
+]
+
+.hidden.center.bigger[__Batch normalization__ .cites[(Ioffe and Szegedy, 2015)] was the first method introducing this idea.]
+
+
+---
+count: false
+class: middle
+
+.bigger[Previously we saw that maintaining proper statistics of the activations and derivatives was a critical issue to allow the training of deep architectures.]
+
+.bigger[We can addres this by: 
+
+($1$) crafting smarter _weight initialization_ techniques
+]
+
+.hidden.bigger[ 
+($2$)explicitly _forcing the activation statistics_ during the forward pass by re-normalizing them.
+]
+
+.hidden.center.bigger[__Batch normalization__ .cites[(Ioffe and Szegedy, 2015)] was the first method introducing this idea.]
+
+
+---
+count: false
+class: middle
+
+.bigger[Previously we saw that maintaining proper statistics of the activations and derivatives was a critical issue to allow the training of deep architectures.]
+
+.bigger[We can addres this by: 
+
+($1$) crafting smarter _weight initialization_ techniques
+]
+
+.bigger[ 
+($2$) explicitly _forcing the activation statistics_ during the forward pass by re-normalizing them.
+]
+
+.hidden.center.bigger[__Batch normalization__ .cites[(Ioffe and Szegedy, 2015)] was the first method introducing this idea.]
+
+---
+count: false
+class: middle
+
+.bigger[Previously we saw that maintaining proper statistics of the activations and derivatives was a critical issue to allow the training of deep architectures.]
+
+.bigger[We can addres this by: 
+
+($1$) crafting smarter _weight initialization_ techniques
+]
+
+.bigger[ 
+($2$) explicitly _forcing the activation statistics_ during the forward pass by re-normalizing them.
+]
+
+.center.bigger[__Batch normalization__ .cites[(Ioffe and Szegedy, 2015)] was the first method introducing this idea.]
+
+
+---
+class: middle
+
+.bigger.italic["Training Deep Neural Networks is complicated by the fact that the _distribution of each layer's inputs changes during training, as the parameters of the previous layers change_. This slows down the training by requiring lower learning rates and careful parameter initialization ..."]
+
+.pull-right[(Ioffe and Szegedy, 2015)]
+
+.reset-column[
+]
+
+
+.hidden.center.width-60[![](images/part14/lenet5.png)]
+
+
+.citation[S. Ioffe and C. Szegedy, Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift; arXiv 2015]
+
+---
+count: false
+class: middle
+
+.bigger.italic["Training Deep Neural Networks is complicated by the fact that the _distribution of each layer's inputs changes during training, as the parameters of the previous layers change_. This slows down the training by requiring lower learning rates and careful parameter initialization ..."]
+
+.pull-right[(Ioffe and Szegedy, 2015)]
+
+.reset-column[
+]
+
+
+.center.width-60[![](images/part14/lenet5.png)]
+
+
+.citation[S. Ioffe and C. Szegedy, Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift; arXiv 2015]
+
+---
+<br/>
+Consider a simplified 3-layer MLP, with $x, w\_1, w\_2, w\_3 \in\mathbb{R}$, such that
+$$f(x; w\_1, w\_2, w\_3) = \sigma\left(w\_3\sigma\left( w\_2 \sigma\left( w\_1 x \right)\right)\right). $$
+
+Under the hood, this would be evaluated as
+$$\begin{aligned}
+u\_1 &= w\_1 x \\\\
+u\_2 &= \sigma(u\_1) \\\\
+u\_3 &= w\_2 u\_2 \\\\
+u\_4 &= \sigma(u\_3) \\\\
+u\_5 &= w\_3 u\_4 \\\\
+\hat{y} &= \sigma(u\_5)
+\end{aligned}$$
+
+
+.citation[S. Ioffe and C. Szegedy, Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift; arXiv 2015]
+--
+count: false
+
+Batch normalization can be done anywhere in a deep architecture, and forces the activations' first and second order moments, so that the following layers do not need to adapt to their drift.
+
+
+---
+# Batch normalization
+
+
+Normalize activations in each **mini-batch** before activation function:
+*speeds up* and *stabilizes* training 
+
+.citation[S. Ioffe and C. Szegedy, Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift; arXiv 2015]
+--
+
+count: false
+.center.width-50[![](images/part14/batchnorm.png)]
+<br/>
+
+
+---
+# Batch normalization
+
+During training batch normalization _shifts and rescales according to the mean and variance estimated on the batch_.
+
+.center.width-50[![](images/part14/batchnorm.png)]
+<br/>
+
+.citation[S. Ioffe and C. Szegedy, Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift; arXiv 2015]
+
+---
+
+# Batch normalization
+
+As for dropout, the model behaves differently during __train__ and __test__.
+
+At **test time**, use average and standard deviation computed on
+*the whole dataset* instead of batch
+
+
+Widely used in CNNs, but requires the mini-batch to be large
+enough to compute statistics in the minibatch.
+
+---
+# Batch normalization
+
+As dropout, batch normalization is implemented as a separate module .highlight[`torch.BatchNorm1d`] / .highlight[`torch.BatchNorm2d`] / .highlight[`torch.BatchNorm3d`] that processes the input components separately. 
+
+--
+count: false
+
+```py
+>>> x = torch.randn(16, 100, 7, 7)
+>>> bn2d = nn.BatchNorm2d(100)
+>>> y = bn2d(x)
+>>> x.size()
+
+torch.Size([16, 100, 7, 7])
+>>> y.size()
+
+torch.Size([16, 100, 7, 7])
+>>> bn2d.weight.data.size()
+
+torch.Size([100])
+>>> bn2d.bias.data.size()
+
+torch.Size([100])
+>>> bn2d.running_mean.size()
+
+torch.Size([100])
+>>> bn2d.running_var.size()
+
+torch.Size([100])
+```
+
+
+---
+count: false
+# Batch normalization
+
+As dropout, batch normalization is implemented as a separate module .highlight[`torch.BatchNorm1d`] / .highlight[`torch.BatchNorm2d`] / .highlight[`torch.BatchNorm3d`] that processes the input components separately. 
+
+
+```py
+*>>> x = torch.randn(16, 100, 7, 7)
+>>> bn2d = nn.BatchNorm2d(100)
+>>> y = bn2d(x)
+*>>> x.size()
+
+*torch.Size([16, 100, 7, 7])
+*>>> y.size()
+
+*torch.Size([16, 100, 7, 7])
+>>> bn2d.weight.data.size()
+
+torch.Size([100])
+>>> bn2d.bias.data.size()
+
+torch.Size([100])
+>>> bn2d.running_mean.size()
+
+torch.Size([100])
+>>> bn2d.running_var.size()
+
+torch.Size([100])
+```
+---
+count: false
+# Batch normalization
+
+As dropout, batch normalization is implemented as a separate module .highlight[`torch.BatchNorm1d`] / .highlight[`torch.BatchNorm2d`] / .highlight[`torch.BatchNorm3d`] that processes the input components separately. 
+
+
+```py
+>>> x = torch.randn(16, 100, 7, 7)
+*>>> bn2d = nn.BatchNorm2d(100)
+>>> y = bn2d(x)
+>>> x.size()
+
+torch.Size([16, 100, 7, 7])
+>>> y.size()
+
+torch.Size([16, 100, 7, 7])
+*>>> bn2d.weight.data.size()
+
+*torch.Size([100])
+*>>> bn2d.bias.data.size()
+
+*torch.Size([100])
+>>> bn2d.running_mean.size()
+
+torch.Size([100])
+>>> bn2d.running_var.size()
+
+torch.Size([100])
+```
+
+---
+count: false
+# Batch normalization
+
+As dropout, batch normalization is implemented as a separate module .highlight[`torch.BatchNorm1d`] / .highlight[`torch.BatchNorm2d`] / .highlight[`torch.BatchNorm3d`] that processes the input components separately. 
+
+
+```py
+>>> x = torch.randn(16, 100, 7, 7)
+*>>> bn2d = nn.BatchNorm2d(100)
+>>> y = bn2d(x)
+>>> x.size()
+
+torch.Size([16, 100, 7, 7])
+>>> y.size()
+
+torch.Size([16, 100, 7, 7])
+>>> bn2d.weight.data.size()
+
+torch.Size([100])
+>>> bn2d.bias.data.size()
+
+torch.Size([100])
+*>>> bn2d.running_mean.size()
+
+*torch.Size([100])
+*>>> bn2d.running_var.size()
+
+*torch.Size([100])
+```
+---
+
+# Batch normalization
+
+Results on ImageNet LSVRC 2012:
+
+.center.width-70[![](images/part14/batchnorm_1.png)]
+
+
+.citation[S. Ioffe and C. Szegedy, Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift; arXiv 2015]
+
+--
+count: false
+- learning rate can be greater
+- dropout and local normalization are not necessary
+- $L\_2$ regularization influence should be reduced
+
+---
+# Multiple variants
+
+
+.center.width-90[![](images/part14/cnn_normalizations.png)]
+
+
+.citation[Y. Wu and K. He, Group Normalization, ECCV 2018]
+
+---
+
+# Weight Standardization
+
+- recent approach for *micro-batch training* (i.e. 1-2 images per GPU): object detection, semantic segmentation
+- .italic[standardizes]/normalizes weights in convolutional layers 
+
+.center.width-60[![](images/part14/ws1.png)]
+
+
+.citation[S. Qiao et al., Weight Standardization, arXiv 2019]
+
+
+---
+
+# Weight Standardization
+
+.center.width-50[![](images/part14/ws-results.jpg)]
+
+
+.citation[S. Qiao et al., Weight Standardization, arXiv 2019]
+
+
+---
+
+class: end-slide, center
+count: false
+
+The end.
+
+
+</textarea> 
+  <script src="./assets/remark-latest.min.js"></script>
+  <script src="./assets/auto-render.min.js"></script>
+  <script src="./assets/katex.min.js"></script>
+  <script type="text/javascript">
+    function getParameterByName(name, url) {
+          if (!url) url = window.location.href;
+          name = name.replace(/[\[\]]/g, "\\$&");
+          var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+              results = regex.exec(url);
+          if (!results) return null;
+          if (!results[2]) return '';
+          return decodeURIComponent(results[2].replace(/\+/g, " "));
+      }
+
+      // var options = {sourceUrl: getParameterByName("p"),
+      //                highlightLanguage: "python",
+      //                // highlightStyle: "tomorrow",
+      //                // highlightStyle: "default",
+      //                highlightStyle: "github",
+      //                // highlightStyle: "googlecode",
+      //                // highlightStyle: "zenburn",
+      //                highlightSpans: true,
+      //                highlightLines: true,
+      //                ratio: "16:9"};
+      var options = {sourceUrl: getParameterByName("p"),
+                     highlightLanguage: "python",
+                     highlightStyle: "github",
+                     highlightSpans: true,
+                     highlightLines: true,
+                     ratio: "16:9",
+                     slideNumberFormat: (current, total) => `
+        <div class="progress-bar-container">${current}/${total}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/><br/>
+          <div class="progress-bar" style="width: ${current/total*100}%"></div>
+        </div>
+      `};
+
+       var renderMath = function() {
+          renderMathInElement(document.body, {delimiters: [ // mind the order of delimiters(!?)
+              {left: "$$", right: "$$", display: true},
+              {left: "$", right: "$", display: false},
+              {left: "\\[", right: "\\]", display: true},
+              {left: "\\(", right: "\\)", display: false},
+          ]});
+      }
+    var slideshow = remark.create(options, renderMath);
+  </script>
+  </body>
+</html>
+
