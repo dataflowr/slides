@@ -1,0 +1,1669 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>18.2 - Self-Supervised Learning [Andrei Bursuc]</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link rel="stylesheet" href="./assets/katex.min.css">  
+    <link rel="stylesheet" type="text/css" href="./assets/slides.css">
+    <link rel="stylesheet" type="text/css" href="./assets/grid.css">
+  </head>
+  <body>
+
+<textarea id="source">
+
+layout: true
+
+<!-- .center.footer[Andrei BURSUC | Transfer learning and self-supervised learning | @abursuc] -->
+
+.center.footer[Marc LELARGE and Andrei BURSUC | Deep Learning Do It Yourself | 18.2 Self-Supervised Learning]
+
+---
+
+class: center, middle, title-slide
+count: false
+
+## Transfer Learning and Self-Supervised Learning
+# 18.2 Self-Supervised Learning
+
+<br/>
+<br/>
+.bold[Andrei Bursuc ]
+<br/>
+
+
+url: https://dataflowr.github.io/website/
+
+
+.citation[
+With slides from A. Karpathy, F. Fleuret,  G. Louppe, C. Ollion, O. Grisel, Y. Avrithis ...]
+
+
+---
+
+class: middle, center
+
+# Self-supervised learning
+
+
+---
+
+class: middle, center
+
+.center.big[Deep Learning + Supervised Learning is a really cool and strong combo.]
+
+.hidden.center.big.italic[... when task and data permit it.]
+
+---
+count: false
+class: middle
+
+.center.big[Deep Learning + Supervised Learning is a really cool and strong combo.]
+
+.center.big[... when task and data permit it.]
+
+---
+
+class: middle
+
+.center.big[In addition to **data acquisition and annotation challenges**, <br/>the _representation learning perspective_ provides additional reasons <br/> to look for alternative or complementary solutions. ]
+
+
+---
+
+class: middle
+
+## .center[The type of supervision signal can bias the network in unexpected ways]
+
+.center.width-90[![](images/part18/gatys-1.png)]
+.caption[VGG-16 preditions on original and artificially texturised images.]
+
+.citation[L.A. Gatys et al., Texture and art with deep neural networks, Neurobiology 2017]
+
+---
+
+class: middle
+
+## .center[The type of supervision signal can bias the network in unexpected ways]
+
+.center.width-85[![](images/part18/texture-bias.png)]
+.caption[Classification predictions of a ResNet-50 trained on ImageNet]
+
+
+.citation[R. Geirhos et al., ImageNet-trained CNNs are biased towards texture; increasing shape bias improves accuracy and robustness, ICLR 2019]
+
+
+---
+
+class: middle, center
+
+.big[Improving representation learning requires features that are *not specialized for solving a particular supervised task*, but rather *encapsulate richer statistics for various downstream tasks*.]
+
+
+---
+
+class: middle
+
+## .center[The success of self-supervised methods in NLP, e.g. _word2vec_, is inspiring ]
+
+.center.width-85[![](images/part18/bert-1.png)]
+.caption[Missing word prediction task.]
+.center.width-85[![](images/part18/bert-2.png)]
+.caption[Next sentence prediction task.]
+
+
+
+.citation[T. Mikolov et al., Efficient estimation of word representations in vector space, ArXiv 2013 <br/>T. Mikolov et al., Distributed representations of words and phrases and their compositionality, NeurIPS 2013<br/>J. Devlin, BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding, ArXiv 2018]
+
+---
+count: false
+class: middle
+
+# .center[What is self-supervision?]
+<br/>
+
+- .bigger[A form of unsupervised learning where the **data (not the human) provides the supervision signal**]
+
+.hidden[
+- .bigger[Usually, *define a pretext task* for which the network is forced to learn what we really care about]
+]
+
+.hidden[
+- .bigger[For most pretext tasks, *a part of the data is withheld* and the network has to predict it]
+]
+
+.hidden[
+- .bigger[The features/representations learned on the pretext task are subsequently used for a different *downstream task*, usually where some annotations are available.]
+]
+
+---
+count: false
+class: middle
+
+# .center[What is self-supervision?]
+<br/>
+
+- .bigger[A form of unsupervised learning where the **data (not the human) provides the supervision signal**]
+
+- .bigger[Usually, *define a pretext task* for which the network is forced to learn what we really care about]
+
+.hidden[
+- .bigger[For most pretext tasks, *a part of the data is withheld* and the network has to predict it]
+]
+
+.hidden[
+- .bigger[The features/representations learned on the pretext task are subsequently used for a different *downstream task*, usually where some annotations are available.]
+]
+
+---
+count: false
+class: middle
+
+# .center[What is self-supervision?]
+<br/>
+
+- .bigger[A form of unsupervised learning where the **data (not the human) provides the supervision signal**]
+
+- .bigger[Usually, *define a pretext task* for which the network is forced to learn what we really care about]
+
+- .bigger[For most pretext tasks, *a part of the data is withheld* and the network has to predict it]
+
+.hidden[
+- .bigger[The features/representations learned on the pretext task are subsequently used for a different *downstream task*, usually where some annotations are available.]
+]
+
+---
+
+count: false
+class: middle
+
+# .center[What is self-supervision?]
+<br/>
+
+- .bigger[A form of unsupervised learning where the **data (not the human) provides the supervision signal**]
+
+- .bigger[Usually, *define a pretext task* for which the network is forced to learn what we really care about]
+
+- .bigger[For most pretext tasks, *a part of the data is withheld* and the network has to predict it]
+
+- .bigger[The features/representations learned on the pretext task are subsequently used for a different *downstream task*, usually where some annotations are available.]
+
+---
+
+class: middle 
+
+## .center[Example: Rotation prediction]
+
+.center.width-70[![](images/part18/rotnet_3.png)]
+
+.center[Predict the orientation of the image]
+
+.citation[S. Gidaris et al., Unsupervised Representation Learning by Predicting Image Rotations, ICLR 2018]
+
+---
+
+# Self-supervised learning pipeline
+
+.center.bold.bigger[*Stage 1:* Train network on pretext task (without human labels)]
+.center.width-90[![](images/part18/self-sup-pipeline-step1.png)]
+
+---
+count:false
+
+# Self-supervised learning pipeline
+
+.center.bold.bigger[*Stage 1:* Train network on pretext task (without human labels) ]
+.center.width-90[![](images/part18/self-sup-pipeline-step1.png)]
+.center.bold.bigger[*Stage 2:* Train classifier on learned features for new task with fewer labels]
+.center.width-90[![](images/part18/self-sup-pipeline-step2-1.png)]
+---
+count:false
+
+# Self-supervised learning pipeline
+
+.center.bold.bigger[*Stage 1:* Train network on pretext task (without human labels)]
+.center.width-90[![](images/part18/self-sup-pipeline-step1.png)]
+.center.bold.bigger[*Stage 2:* Fine-tune network for new task with fewer labels]
+.center.width-90[![](images/part18/self-sup-pipeline-step2-3.png)]
+
+
+
+---
+
+class: middle, black-slide
+
+## .center[Karate Kid and Self-Supervised Learning]
+.center.width-85[![](images/part18/karate-kid-poster-wide.jpg)]
+.caption[The Karate Kid (1984)]
+
+---
+class: middle, black-slide
+
+## .center[Stage 1: Train .italic[muscle memory] on pretext tasks]
+
+.grid[
+
+.kol-4-12[
+.center.width-100[![](images/part18/karate-kid-clean.gif)]
+]
+
+.kol-4-12[
+.center.width-100[![](images/part18/karate-kid-paint.webp)]
+]
+
+.kol-4-12[
+.center.width-100[![](images/part18/karate-kid-wax.gif)]
+]
+
+]
+
+.hidden[ 
+.grid[
+.kol-6-12[
+$$\begin{aligned}
+\text{Mr. Miyagi} &= \text{Deep Learning Practitioner} \\\\
+\text{Daniel LaRusso} &= \text{ConvNet}\end{aligned}$$
+]
+
+.kol-6-12[
+$$\begin{aligned}\text{daily chores} &= \text{pretext tasks} \\\\
+\text{learning karate} &= \text{downstream task}\end{aligned}$$
+]
+]
+]
+---
+class: middle, black-slide
+
+## .center[Stage 1: Train .italic[muscle memory] on pretext tasks]
+
+.grid[
+
+.kol-4-12[
+.center.width-100[![](images/part18/karate-kid-clean.gif)]
+]
+
+.kol-4-12[
+.center.width-100[![](images/part18/karate-kid-paint.webp)]
+]
+
+.kol-4-12[
+.center.width-100[![](images/part18/karate-kid-wax.gif)]
+]
+
+]
+
+.grid[
+
+.kol-6-12[
+$$\begin{aligned}
+\text{Mr. Miyagi} &= \text{Deep Learning Practitioner} \\\\
+\text{Daniel LaRusso} &= \text{ConvNet}\end{aligned}$$
+]
+
+.kol-6-12[
+$$\begin{aligned}\text{daily chores} &= \text{pretext tasks} \\\\
+\text{learning karate} &= \text{downstream task}\end{aligned}$$
+
+]
+
+]
+
+
+---
+
+class: middle, black-slide
+
+## .center[Stage 2: Fine-tune skills rapidly]
+
+.center.width-60[![](images/part18/karate-kid-train.gif)]
+
+---
+
+class: middle, black-slide
+
+<!-- ## .center[Stage 2: Fine-tune skills rapidly]
+ -->
+.center.width-60[![](images/part18/karate-kid-fly.gif)]
+
+<!-- .caption[Mr. Myiagi during Stage 1] -->
+
+$$\text{Mr. Miyagi during Stage 1} = \text{catching up on ArXiv papers}$$
+
+---
+class: middle, center
+
+.Q[.big[Is this actually useful in practice?]]
+
+
+<!-- ---
+class: middle
+
+.grid[
+
+.kol-6-12[
+.center.width-100[![](images/part18/imagenet-classif-1.png)]
+.caption[ImageNet Top-1 accuracy of linear classifiers trained on representations learned with different self-supervised methods (pretrained on ImageNet). Gray cross indicates supervised ResNet-50.]
+
+]
+
+.kol-6-12[
+<br/><br/><br/><br/><br/>
+The performance on linear classifiers on ImageNet has accelerated strongly in the past year closing the gap w.r.t. supervised methods
+]
+]
+
+.citation[T. Chen et al., A Simple Framework for Contrastive Learning of Visual Representations, ArXiv 2020 ]
+ -->
+---
+
+class: middle
+
+## .center[Transfer learning - object detection]
+
+.grid[
+
+.kol-6-12[
+.center.width-90[![](images/part18/voc-bench.png)]
+.caption[Object detection with Faster R-CNN fine-tuned on VOC  $\texttt{trainval07+12}$ and evaluated on $\texttt{test07}$. Networks are pre-trained with self-supervision on ImageNet.]
+]
+
+.kol-6-12[
+<br><br><br> <br> 
+- Self-supervised methods are starting to outperform supervised methods
+- This is a __key milestone for self-supervised methods__ as they are finally showing their effectiveness to more complex downstream tasks.
+]
+]
+
+.citation[S. Gidaris et al., Learning Representations by Predicting Bags of Visual Words, CVPR 2020]
+
+---
+
+class: middle
+
+Loosely speaking, multiple old and new approaches could fit, at least partially, the definition of self-supervised learning: 
+- input reconstruction: .cites[[Hinton and Salakhutdinov (2006); Vincent et al. (2008)]]
+- training with paired signals: .cites[[V. De Sa (1994); Arandjelovic and Zisserman (2017); C. Godard et al. (2017)]]
+- hiding data from the networks: .cites[[Doersch et al. (2015); Zhang et el. (2017)]]
+- instance discrimination: .cites[[Dosovitskiy et al. (2014); van der Ooord et al. (2018)]]
+- etc.
+<br/>
+<br/>
+
+.citation[G. Hinton and R. Salakhutdinov, Reducing the Dimensionality of Data with Neural Networks, Science 2006 <br/> P.Vincent et al.,Extracting and Composing Robust Features with Denoising Autoencoders, ICML 2008 <br/> V. De Sa, Learning classification from unlabelled data, NeurIPS 1994 <br/> R. Arandjelovic and A. Zisserman, Look, Listen and Learn, ICCV 2017 <br/> C. Godard et al., Unsupervised Monocular Depth Estimation with Left-Right Consistency, CVPR 2017 <br/> R. Zhang et al., Split-Brain Autoencoders: Unsupervised Learning by Cross-Channel Prediction, CVPR 2017 <br/> C. Doersch et al., Unsupervised Visual Representation Learning by Context Prediction, ICCV 2015 <br/> A. Dosovitskiy et al., Discriminative Unsupervised Feature Learning with Convolutional Neural Networks, NeurIPS 2015 <br/>A. van der Oord et al., Representation Learning with Contrastive Predictive Coding, ArXiv 2018 ]
+
+
+---
+
+class: middle
+
+
+# .center[Scope]
+
+
+.center.big[In this course, we **focus** on self-supervised methods that lead <br/> to *useful representations*, obtained through the invention of *a pretext task* and/or *by hiding a part of the original data* to the network.]
+
+
+---
+
+class: middle, center
+
+## Self-supervised learning
+# A tour of self-supervised methods
+
+
+---
+
+class: middle 
+
+.bigger[
+Rough pretext task classification:
+- Inferring structure
+
+- Transformation prediction
+
+- Reconstruction
+
+- Exploiting time
+
+- Multimodal
+
+- Instance classification
+]
+
+---
+
+count: false
+class: middle 
+
+.bigger[
+Rough pretext task classification:
+- Inferring structure
+
+.inactive[
+- Transformation prediction
+
+- Reconstruction
+
+- Exploiting time
+
+- Multimodal
+
+- Instance classification
+]
+]
+
+---
+
+<!-- 
+class: middle
+## .center[Context prediction]
+-->
+
+# Context prediction
+
+.center.bigger.blue[Can you guess the spatial configuration for the two pairs of patches?]
+.hidden[.center.bigger.red[Much easier if you recognize the object!]]
+
+.grid[
+
+.kol-8-12[
+.center.width-80[![](images/part18/patch_location_q1.png)]
+
+
+]
+
+.kol-4-12[
+
+]
+
+]
+
+.citation[C. Doersch et al., Unsupervised Visual Representation Learning by Context Prediction, ICCV 2015]
+
+---
+
+count: false
+<!-- class: middle
+## .center[Context prediction] -->
+
+# Context prediction
+
+
+.center.bigger.blue[Can you guess the spatial configuration for the two pairs of patches?]
+.center.bigger.red[Much easier if you recognize the object!]
+
+.grid[
+
+.kol-8-12[
+.center.width-80[![](images/part18/patch_location_q2.png)]
+
+
+]
+
+.kol-4-12[
+
+]
+
+]
+
+
+.citation[C. Doersch et al., Unsupervised Visual Representation Learning by Context Prediction, ICCV 2015]
+
+---
+
+count: false
+<!-- class: middle
+## .center[Context prediction] -->
+
+# Context prediction
+
+
+.center.bigger.blue[Can you guess the spatial configuration for the two pairs of patches?]
+.center.bigger.red[Much easier if you recognize the object!]
+
+.grid[
+
+.kol-8-12[
+.center.width-80[![](images/part18/patch_location_q2.png)]
+
+
+]
+
+.kol-4-12[
+<br/> <br/> <br/>
+Intuition: 
+- The network should learn to recognize object parts and their spatial relations
+
+]
+
+]
+
+
+.citation[C. Doersch et al., Unsupervised Visual Representation Learning by Context Prediction, ICCV 2015]
+
+---
+
+<!-- class: middle
+## .center[Context prediction] -->
+
+# Context prediction
+
+.grid[
+
+.kol-3-12[
+.center.width-80[![](images/part18/patch_location_2.png)]
+]
+
+.kol-9-12[
+.center.width-100[![](images/part18/patch_location.png)]
+]
+]
+
+.center[Predict the location of one patch relative to the center patch]
+
+.citation[C. Doersch et al., Unsupervised Visual Representation Learning by Context Prediction, ICCV 2015]
+
+---
+
+<!-- class: middle
+## .center[Context prediction] -->
+
+# Context prediction
+
+.grid[
+
+.kol-3-12[
+.center.width-80[![](images/part18/patch_location_2.png)]
+]
+
+.kol-9-12[
+
+
+.bigger.green[Pros]
+- The first self-supervised method
+- Intuitive task that should enable learning about object parts
+
+.bigger.red[Cons]
+- Assumes training images are photographed with canonical orientations (and canonical orientations exist)
+- Networks can “cheat” so special care is needed 
+- Training on patches, but trying to learn image representations
+- Not fine-grained enough due to no negatives from other images 
+  - .italic[e.g.] no reason to distinguish a cat from dog
+- Small output space - 8 cases (positions) to distinguish?
+]
+]
+
+.citation[C. Doersch et al., Unsupervised Visual Representation Learning by Context Prediction, ICCV 2015]
+
+---
+# Jigsaw puzzles
+
+
+.center.width-100[![](images/part18/jigsaw_1.png)]
+
+.citation[M. Noroozi and P. Favaro, Unsupervised Learning of Visual Representations by Solving Jigsaw Puzzles, ECCV 2016]
+
+---
+
+count: false
+class: middle 
+
+.bigger[
+Rough pretext task classification:
+- Inferring structure
+
+- Transformation prediction
+
+.inactive[
+- Reconstruction
+
+- Exploiting time
+
+- Multimodal
+
+- Instance classification
+]
+]
+
+---
+
+# Rotation prediction
+
+
+.center.bigger.blue[Can you guess how much rotated is applied? ]
+.hidden[.center.bigger.red[Much easier if you recognize the object!]]
+
+.center.width-80[![](images/part18/rotnet_q1.png)]
+
+
+.citation[S. Gidaris et al., Unsupervised representation learning by predicting image rotations, ICLR 2018]
+
+---
+
+count: false
+# Rotation prediction
+
+
+.center.bigger.blue[Can you guess how much rotated is applied? ]
+.center.bigger.red[Much easier if you recognize the object!]
+
+.center.width-80[![](images/part18/rotnet_q2.png)]
+
+
+.citation[S. Gidaris et al., Unsupervised representation learning by predicting image rotations, ICLR 2018]
+
+---
+
+count: false
+# Rotation prediction
+
+
+.center.width-55[![](images/part18/rotnet_pipeline.png)]
+
+
+.bigger.green[Pros]
+- Very simple to implement and use, while being quite effective
+
+
+.bigger.red[Cons]
+- Assumes training images are photographed with canonical orientations (and canonical orientations exist)
+- Train-eval gap: no rotated images at eval
+- Not fine-grained enough due to no negatives from other images
+  - .italic[e.g.] no reason to distinguish a cat from dog
+- Small output space - 4 cases (rotations) to distinguish 
+]
+
+.citation[S. Gidaris et al., Unsupervised representation learning by predicting image rotations, ICLR 2018]
+
+---
+
+count: false
+class: middle 
+
+.bigger[
+Rough pretext task classification:
+- Inferring structure
+
+- Transformation prediction
+
+- Reconstruction
+
+.inactive[
+- Exploiting time
+
+- Multimodal
+
+- Instance classification
+]
+]
+
+---
+
+# Context encoders
+
+.center.bigger.blue[What goes in the middle? ]
+.hidden[.center.bigger.red[Much easier if you recognize the objects!]]
+
+
+.grid[
+.kol-6-12[
+.center.width-70[![](images/part18/elephant_1.png)]
+]
+.kol-6-12[
+.hidden[
+.center.width-70[![](images/part18/elephant_2.png)]
+]
+]
+]
+
+.citation[D. Pathak et al., Context Encoders: Feature Learning by Inpainting, CVPR 2016]
+
+---
+
+count: false
+# Context encoders
+
+.center.bigger.blue[What goes in the middle? ]
+.center.bigger.red[Much easier if you recognize the objects!]
+
+
+.grid[
+.kol-6-12[
+.center.width-70[![](images/part18/elephant_1.png)]
+]
+.kol-6-12[
+.center.width-70[![](images/part18/elephant_2.png)]
+]
+]
+
+.citation[D. Pathak et al., Context Encoders: Feature Learning by Inpainting, CVPR 2016]
+
+---
+class: middle
+
+.center.width-60[![](images/part18/context_encoder_1.png)]
+
+.bigger.green[Pros]
+- Requires preservation of fine-grained information
+
+.bigger.red[Cons]
+- Train-eval gap: no masking at eval
+- Reconstruction is too hard and ambiguous
+- Lots of effort spent on “useless” details: exact colour, good boundary, etc
+]
+
+.citation[D. Pathak, Context Encoders: Feature Learning by Inpainting, CVPR 2016]
+
+---
+# Context encoders
+
+.center.width-70[![](images/part18/context_encoder_2.png)]
+.citation[D. Pathak, Context Encoders: Feature Learning by Inpainting, CVPR 2016]
+
+
+
+
+---
+
+# Colorization
+
+.center.bigger.blue[What is the colour of every pixel?]
+.hidden.center.bigger.red[Hard if you don’t recognize the object!]
+
+
+.grid[
+.kol-6-12[
+.center.width-70[![](images/part18/fish_1.png)]
+]
+.hidden.kol-6-12[
+.center.width-70[![](images/part18/fish_2.png)]
+]
+]
+
+
+.citation[R. Zhang et al., Colorful image colorization, ECCV 2016]
+
+---
+count: false
+# Colorization
+
+.center.bigger.blue[What is the colour of every pixel?]
+.center.bigger.red[Hard if you don’t recognize the object!]
+
+
+.grid[
+.kol-6-12[
+.center.width-70[![](images/part18/fish_1.png)]
+]
+.kol-6-12[
+.center.width-70[![](images/part18/fish_2.png)]
+]
+]
+
+
+.citation[R. Zhang et al., Colorful image colorization, ECCV 2016]
+
+---
+
+
+class: middle
+.center.width-70[![](images/part18/colorization_1.jpg)]
+
+.bigger.green[Pros]
+- Requires preservation of fine-grained information
+
+.bigger.red[Cons]
+- Train-eval gap: no masking at eval
+- Reconstruction is too hard and ambiguous
+- Lots of effort spent on “useless” details: exact colour, good boundary, etc
+- Forced to evaluate on greyscale images, losing information
+
+.citation[R. Zhang et al., Colorful image colorization, ECCV 2016]
+
+---
+
+# Predicting bag-of-words
+
+
+.center.width-80[![](images/part18/bownet_bow.png)]
+.caption[Bag-of-words pipeline]
+
+.citation[S. Gidaris et al., Learning Representations by Predicting Bags of Visual Words, CVPR 2020]
+---
+
+# Predicting bag-of-words
+
+.center.width-100[![](images/part18/bownet_vocabulary.png)]
+.caption[Clusters of visual words]
+
+.citation[S. Gidaris et al., Learning Representations by Predicting Bags of Visual Words, CVPR 2020]
+---
+
+# Predicting bag-of-words
+
+.grid[
+
+.kol-6-12[
+.center.width-100[![](images/part18/bownet_1.png)]
+]
+
+.kol-6-12[
+.bigger.green[Pros]
+- Representations are invariant to desired transformations
+- Learn contextual reasoning skills
+
+
+.bigger.red[Cons]
+- Requires bootstrapping from another network
+- (Partial) loss of spatial information
+
+]
+
+
+]
+
+.citation[S. Gidaris et al., Learning Representations by Predicting Bags of Visual Words, CVPR 2020]
+---
+
+count: false
+class: middle 
+
+.bigger[
+Rough pretext task classification:
+- Inferring structure
+
+- Transformation prediction
+
+- Reconstruction
+
+- Instance classification
+
+.inactive[
+- Exploiting time
+
+- Multimodal
+]
+]
+
+---
+# Exemplar networks
+
+.center.bigger.blue[The image on the left is a distorted crop extracted from an image, which of these crops has the same source image?]
+.hidden.center.bigger.red[Easy if robust to the desired transformations (geometry and colour) ]
+
+
+.grid[
+.kol-4-12[
+<br/>
+.center.width-25[![](images/part18/exemplar_1.png)]
+]
+.kol-8-12[
+.center.width-100[![](images/part18/exemplar_2.png)]
+]
+]
+
+
+.citation[A. Dosovitskiy et al., Discriminative Unsupervised Feature Learning with Exemplar Convolutional Neural Networks, PAMI 2015]
+
+---
+count: false
+# Exemplar networks
+
+.center.bigger.blue[The image on the left is a distorted crop extracted from an image, which of these crops has the same source image?]
+.center.bigger.red[Easy if robust to the desired transformations (geometry and colour) ]
+
+
+.grid[
+.kol-4-12[
+<br/>
+.center.width-25[![](images/part18/exemplar_1.png)]
+]
+.kol-8-12[
+.center.width-100[![](images/part18/exemplar_3.png)]
+]
+]
+
+
+.citation[A. Dosovitskiy et al., Discriminative Unsupervised Feature Learning with Exemplar Convolutional Neural Networks, PAMI 2015]
+
+---
+# Exemplar networks
+
+
+.grid[
+.kol-4-12[
+.center.width-70[![](images/part18/exemplar_4.png)]
+]
+.kol-8-12[
+.bigger.green[Pros]
+- Representations are invariant to desired transformations
+- Requires preservation of fine-grained information
+
+
+.bigger.red[Cons]
+- Choosing the augmentations is important
+- Exemplar based: images of the same class or instance are negatives
+  - Nothing prevents it from focusing on the background
+- Original formulation is not scalable (number of “classes” = dataset size)
+
+]
+]
+
+
+.citation[A. Dosovitskiy et al., Discriminative Unsupervised Feature Learning with Exemplar Convolutional Neural Networks, PAMI 2015]
+---
+# Exemplar networks
+
+
+.grid[
+.kol-3-12[
+.center.width-90[![](images/part18/exemplar_5.png)]
+]
+.kol-9-12[
+Exemplar ConvNets are not scalable (number of “classes” = number of training images)
+- Using $w\_i$ as class prototype prevents explicit comparison between instances, i.e. individual samples
+- We can use instead a _non-parametric_ variant that replaces $q^\top w\_j$ with $q^\top k\_i$
+
+$$\mathcal{L}\_{\text{softmax}} (q, c(q)) = - \log\frac{\exp(q^\top w\_{c(q)})}{ \sum\_{c\in C}\exp(q^\top w\_{c})}$$
+
+$$\downarrow$$
+$$\mathcal{L}\_{\text{non-param-softmax}}(q) = - \log \frac{\exp(q^\top k\_q )}{ \sum\_{i \in N}\exp(q ^\top k\_{i})}$$
+
+where:
+- $N$ is the number of training samples 
+- $k\_q \in \\{ k\_i\\}$ is the key of a positive sample for $q$
+
+]
+]
+
+
+.citation[A. Dosovitskiy et al., Discriminative Unsupervised Feature Learning with Exemplar Convolutional Neural Networks, PAMI 2015]
+
+---
+
+# Contrastive methods
+
+.center.width-55[![](images/part18/simclr.png)]
+.caption[SimCLR]
+
+.citation[T. Chen et al., A Simple Framework for Contrastive Learning of Visual Representations, ArXiv 2020 ]
+
+---
+
+count: false
+class: middle 
+
+.bigger[
+Rough pretext task classification:
+- Inferring structure
+
+- Transformation prediction
+
+- Reconstruction
+
+- Instance classification
+
+- Exploiting time
+
+.inactive[
+- Multimodal
+]
+]
+
+---
+
+# Tracking by colorization
+
+.center.bigger.blue[Given an earlier frame, colourize the new one?]
+.hidden.center.bigger.red[Easy if everything can be tracked!]
+
+
+.center.width-80[![](images/part18/tracking_1.png)]
+
+
+.citation[C. Vondrick et al., Tracking emerges by colorizing videos, ECCV 2018 ]
+
+---
+
+count: false
+# Tracking by colorization
+
+.center.bigger.blue[Given an earlier frame, colourize the new one?]
+.center.bigger.red[Easy if everything can be tracked!]
+
+
+.center.width-80[![](images/part18/tracking_2.png)]
+
+
+.citation[C. Vondrick et al., Tracking emerges by colorizing videos, ECCV 2018 ]
+---
+
+# Tracking by colorization
+
+
+.grid[
+
+.kol-6-12[
+.center.width-100[![](images/part18/tracking_3.png)]
+]
+
+.kol-6-12[
+.bigger.green[Pros]
+- Emerging behaviour: tracking, matching, optical flow, segmentation
+
+
+.bigger.red[Cons]
+- Low level cues are effective - less emphasis on semantics
+- Forced to evaluate on greyscale frames, losing information
+
+]
+]
+
+
+.citation[C. Vondrick et al., Tracking emerges by colorizing videos, ECCV 2018 ]
+
+---
+
+# Predicting the correct order of time
+
+
+.center.width-50[![](images/part18/temporal_1.png)]
+.citation[I. Misra et al., Shuffle and Learn: Unsupervised Learning using Temporal Order Verification, ECCV 2016]
+
+---
+
+# Predicting the correct order of time
+
+
+.center.width-60[![](images/part18/temporal_2.png)]
+.citation[I. Misra et al., Shuffle and Learn: Unsupervised Learning using Temporal Order Verification, ECCV 2016]
+
+
+
+---
+# Sorting video sequences
+
+.center.width-70[![](images/part18/opn.png)]
+
+
+.citation[H.Y. Lee et al., Unsupervised Representation Learning by Sorting Sequences, ICCV 2017]
+
+---
+
+# Sorting video sequences
+
+
+.center.width-80[![](images/part18/opn_2.png)]
+
+
+.citation[H.Y. Lee et al., Unsupervised Representation Learning by Sorting Sequences, ICCV 2017]
+
+---
+
+count: false
+class: middle 
+
+.bigger[
+Rough pretext task classification:
+- Inferring structure
+
+- Transformation prediction
+
+- Reconstruction
+
+- Instance classification
+
+- Exploiting time
+
+- Multimodal
+]
+
+---
+
+# Audio-visual correspondence
+
+<br/> <br/>
+## .center[ Can audio and video learn from each other?]
+
+.center.width-80[![](images/part18/look_listen_3.png)]
+.citation[R. Arandjelovic, Look, Listen and Learn, ICCV 2017]
+
+.credit[Slide credit: A. Zissermanl]
+---
+
+#Audio-visual correspondence
+
+
+.center.width-80[![](images/part18/look_listen_4.png)]
+.citation[R. Arandjelovic, Look, Listen and Learn, ICCV 2017]
+.credit[Slide credit: A. Zissermanl]
+
+---
+#Audio-visual correspondence
+
+.center.width-80[![](images/part18/look_listen_5.png)]
+.citation[R. Arandjelovic, Look, Listen and Learn, ICCV 2017]
+.credit[Slide credit: A. Zissermanl]
+
+
+---
+#Audio-visual correspondence
+
+.center.width-80[![](images/part18/look_listen_6.png)]
+.citation[R. Arandjelovic, Look, Listen and Learn, ICCV 2017]
+.credit[Slide credit: A. Zissermanl]
+
+---
+#Audio-visual correspondence
+
+.center.width-90[![](images/part18/look_listen_7.png)]
+.citation[R. Arandjelovic, Look, Listen and Learn, ICCV 2017]
+.credit[Slide credit: A. Zissermanl]
+
+---
+#Audio-visual correspondence
+
+.center.width-80[![](images/part18/look_listen_1.png)]
+.citation[R. Arandjelovic, Look, Listen and Learn, ICCV 2017]
+
+---
+#Audio-visual correspondence
+
+.center.width-80[![](images/part18/look_listen_2.png)]
+.citation[R. Arandjelovic, Look, Listen and Learn, ICCV 2017]
+
+---
+
+class: middle, center
+
+## Self-supervised learning
+# Evaluating Self-Supervised methods
+
+---
+
+class: middle
+
+.bigger[Self-supervised methods are evaluated on a battery of datasests and tasks .cites[[Goyal et al. (2019), <br/> Zhai et al. (2019)]]]
+
+.bigger[In most benchmarks the model is *pre-trained on ImageNet* on a pretext task and *subsequentely fine-tuned on other datasets* or protocols.]
+
+
+.citation[P. Goyal et al., Scaling and Benchmarking Self-Supervised Visual Representation Learning, ICCV 2019 <br/> X. Zhai et al., A Large-scale Study of Representation Learning with the Visual Task Adaptation Benchmark, ArXiv 2019]
+
+
+---
+
+class: middle 
+
+# Evaluation tasks
+<br/>
+## Linear classification
+<br/>
+
+## Efficient learning
+<br/>
+
+## Transfer learning
+
+---
+# Linear classification
+
+.center.width-70[![](images/part18/self-sup-pipeline-step2-1-crop.png)]
+
+- Simplest evaluation of the utility of learned representations: fit a linear classifier (FC layer, linear SVM)
+- .bold[Typical datasets:]
+  + ImageNet
+  + Places205
+  + Pascal VOC07 (image classification)
+  + COCO14 (image classification)
+
+
+.citation[P. Goyal et al., Scaling and Benchmarking Self-Supervised Visual Representation Learning, ICCV 2019]
+
+
+---
+# Linear classification
+
+.grid[
+
+.kol-6-12[
+.center.width-100[![](images/part18/imagenet-classif-1.png)]
+.caption[ImageNet Top-1 accuracy of linear classifiers trained on representations learned with different self-supervised methods (pretrained on ImageNet). ]
+
+]
+
+.kol-6-12[
+<br><br>
+- The performance on this benchmark has accelerated strongly in the past year closing the gap w.r.t. supervised methods
+]
+]
+
+.citation[T. Chen et al., A Simple Framework for Contrastive Learning of Visual Representations, ArXiv 2020 ]
+---
+
+count: false
+# Linear classification
+
+.grid[
+
+.kol-6-12[
+.center.width-100[![](images/part18/imagenet-classif-2.png)]
+.caption[ImageNet Top-1 accuracy of linear classifiers trained on representations learned with different self-supervised methods (pretrained on ImageNet). ]
+]
+
+.kol-6-12[
+<br><br>
+- The performance on this benchmark has accelerated strongly in the past year closing the gap w.r.t. supervised methods
+- The main contributors: 
+  - _contrastive learning with more negatives_ 
+  - _output projection head_ 
+  - _better designed and stronger data augmentation_
+  - _longer training_
+]
+]
+
+.citation[T. Chen et al., A Simple Framework for Contrastive Learning of Visual Representations, ArXiv 2020 ]
+
+---
+
+class: middle
+
+## .center[Linear classification on other datasets]
+
+.grid[
+
+.kol-6-12[
+.center.width-90[![](images/part18/linear-classif-bench.png)]
+]
+
+.kol-6-12[
+<br><br><br><br><br> <br><br> 
+.caption[Image classification performance on ImageNet, VOC07, Places205, and iNaturalist datasets. Linear classifiers are trained on image representations obtained by self-supervised learners that were pre-trained on ImageNet.]
+]
+]
+
+.citation[I. Misra and L. van der Maaten, Self-Supervised Learning of Pretext-Invariant Representations, CVPR 2020 ]
+
+???
+- The ranking of the methods usually remains unchanged for contrastive methods
+
+---
+
+# Efficient classification
+
+.center.width-70[![](images/part18/self-sup-pipeline-step2-2-crop.png)]
+
+- Fine-tune pre-trained network on a subset of labels $1\\%-100\\%$
+
+- .bold[Datasets:] ImageNet, VTAB
+
+.citation[X. Zhai et al., S4L: Self-Supervised Semi-Supervised Learning, ICCV 2019 <br/>X. Zhai et al., A Large-scale Study of Representation Learning with the Visual Task Adaptation Benchmark, ArXiv 2019 ]
+
+???
+- ImageNet is still the most popular choice, though new datasets are proposes now, e.g. VTAB benchmark
+
+---
+
+# Efficient classification
+
+.grid[
+
+.kol-6-12[
+.center.width-90[![](images/part18/few-labels-bench.png)]
+.caption[ImageNet accuracy of models trained with few labels]
+]
+
+.kol-6-12[
+<br><br><br> <br> <br> 
+1. Sample $1\\%$ or $10\\%$ of ImageNet images in a class-balanced way (i.e. $12.8 / 128$ images per class)
+2. Fine-tune the whole base network on the labeled data
+<!-- - The supervised baseline from .citet[Zhai et al. (2019)] is strong due to intensive hyper-parameter search -->
+]
+]
+
+.citation[X. Zhai et al., S4L: Self-Supervised Semi-Supervised Learning, ICCV 2019 <br/> T. Chen et al., A Simple Framework for Contrastive Learning of Visual Representations, ArXiv 2020 ]
+
+???
+- Recent self-supervised methods outperform the supervised baseline
+
+---
+
+# Efficient classification
+
+.grid[
+
+.kol-6-12[
+.center.width-100[![](images/part18/few-labels-bench-2.png)]
+.caption[ImageNet accuracy of models trained with few labels: CPCv2 vs. supervised]
+]
+
+.kol-6-12[
+<br><br><br> <br> 
+- Supervised networks do not generalize well from few labeled data
+- Self-supervised networks reach significantly better accuracy in the low data regime 
+]
+]
+
+.citation[O. Henaff et al., Data-Efficient Image Recognition with Contrastive Predictive Coding, ArXiv 2019 ]
+
+---
+# Transfer learning
+
+.center.width-70[![](images/part18/self-sup-pipeline-step2-3-crop.png)]
+
+- The pre-trained model is augmented with task specific modules (e.g. decoders for semantic segmentation, RPN for object detection) and fine-tuned partially or completely
+
+- .bold[Tasks and datasets:] 
+  + Object detection: VOC07, VOC12, COCO14
+  + Semantic segmentation: VOC07, Cityscapes
+  + Surface Normal Estimation: NYUv2
+  + Visual Navigation: Gibson
+
+.citation[ P. Goyal et al., Scaling and Benchmarking Self-Supervised Visual Representation Learning, ICCV 2019 ]
+
+---
+
+# Transfer learning - object detection
+
+<br/>
+.center.width-50[![](images/part18/voc-bench.png)]
+.caption[Object detection with Faster R-CNN fine-tuned on VOC  $\texttt{trainval07+12}$ and evaluated on $\texttt{test07}$. <br/>Networks are pre-trained with self-supervision on ImageNet.]
+
+.citation[S. Gidaris et al., Learning Representations by Predicting Bags of Visual Words, CVPR 2020]
+
+
+---
+
+class: middle, center
+
+## Self-supervised learning
+# Applications of Self-Supervision
+
+
+<!-- .bigg.highlight[Andrei] -->
+
+---
+
+class: middle
+
+.bigger[Self-supervision has been successfully leveraged for several areas:]
+
+.hidden.bigger[
+- Apply on downstream task with few(er) or no labels .cites[[Dwibedi et al. (2019); Wang et al. (2019); Henaff et al. (2019); Arandjelovic and Zisserman (2017)]]
+]
+
+.hidden.bigger[
+- Boosting performance through _an extra prediction head_ in addition to the main task: semi-supervised learning, domain generalization, etc. 
+]
+
+.hidden.citation[D. Dwibedi et al., Temporal Cycle-Consistency Learning, CVPR 2019 <br/> X. Wang et al., Learning Correspondence from the Cycle-Consistency of Time, CVPR 2019 <br/> O. Henaff et al., Data-Efficient Image Recognition with Contrastive Predictive Coding, ArXiv 2019 <br/> R. Arandjelovic and A. Zisserman, Look, Listen and Learn , ICCV 2017]
+
+---
+count: false
+class: middle
+
+.bigger[Self-supervision has been successfully leveraged for several areas:]
+
+
+.bigger[
+- Apply on downstream task with few(er) or no labels .cites[[Dwibedi et al. (2019); Wang et al. (2019); Henaff et al. (2019); Arandjelovic and Zisserman (2017)]]
+]
+
+.hidden.bigger[
+- Boosting performance through _an extra prediction head_ in addition to the main task: semi-supervised learning, domain generalization, etc. 
+]
+
+.citation[D. Dwibedi et al., Temporal Cycle-Consistency Learning, CVPR 2019 <br/> X. Wang et al., Learning Correspondence from the Cycle-Consistency of Time, CVPR 2019 <br/> O. Henaff et al., Data-Efficient Image Recognition with Contrastive Predictive Coding, ArXiv 2019 <br/> R. Arandjelovic and A. Zisserman, Look, Listen and Learn , ICCV 2017]
+
+
+
+---
+count: false
+class: middle
+
+.bigger[Self-supervision has been successfully leveraged for several areas:]
+
+
+.bigger[
+- Apply on downstream task with few(er) or no labels .cites[[Dwibedi et al. (2019); Wang et al. (2019); Henaff et al. (2019); Arandjelovic and Zisserman (2017)]]
+]
+
+.bigger[
+- Boosting performance through _an extra prediction head_ in addition to the main task: semi-supervised learning, domain generalization, etc.
+]
+
+.citation[D. Dwibedi et al., Temporal Cycle-Consistency Learning, CVPR 2019 <br/> X. Wang et al., Learning Correspondence from the Cycle-Consistency of Time, CVPR 2019 <br/> O. Henaff et al., Data-Efficient Image Recognition with Contrastive Predictive Coding, ArXiv 2019 <br/> R. Arandjelovic and A. Zisserman, Look, Listen and Learn , ICCV 2017]
+
+---
+count: false
+class: middle
+
+.inactive.bigger[Self-supervision has been successfully leveraged for several areas:]
+
+
+.inactive.bigger[
+- Apply on downstream task with few(er) or no labels .cites[.inactive[[Dwibedi et al. (2019); Wang et al. (2019); Henaff et al. (2019); Arandjelovic and Zisserman (2017)]]]
+]
+
+.bigger[
+- Boosting performance through _an extra prediction head_ in addition to the main task: semi-supervised learning, domain generalization, etc.
+]
+
+.citation[D. Dwibedi et al., Temporal Cycle-Consistency Learning, CVPR 2019 <br/> X. Wang et al., Learning Correspondence from the Cycle-Consistency of Time, CVPR 2019 <br/> O. Henaff et al., Data-Efficient Image Recognition with Contrastive Predictive Coding, ArXiv 2019 <br/> R. Arandjelovic and A. Zisserman, Look, Listen and Learn , ICCV 2017]
+
+---
+
+class: middle
+## .center[Bridging few-shot and self-supervised learning]
+
+.center.width-75[![](images/part18/gidaris-boosting.png)]
+
+- Both paradigms aim to learn from few or no labeled images and consist of two stages
+- .bold[Self-supervision as auxiliary objective] at 1st learning stage of few-shot model:
+  - More diverse features and better ability to adapt to novel classes with few data
+- Explored self-supervised methods: _Rotation_ and _Relative Patch Location_
+
+.citation[S. Gidaris et al., Boosting Few-Shot Learning with Self-Supervision, ICCV 2019; J.C. Su et al., When Does Self-supervision Improve Few-shot Learning?, AAAI 2020]
+
+---
+
+class: middle
+## .center[Towards better robustness and uncertainty]
+
+.grid[
+
+.kol-4-12[
+<br/><br/><br/>
+.center.width-80[![](images/part18/hendrycks-4.png)]
+.caption[Accuracy under adversarial attacks of varying strenghts $\varepsilon$]
+]
+
+.kol-8-12[
+
+.center.width-85[![](images/part18/hendrycks-2.png)]
+.caption[ Accuracy of usual training vs training with auxiliary rotation self-supervision on the 19 CIFAR-10-C corruptions.]
+]
+]
+
+.hidden[
+.center.width-25[![](images/part18/hendrycks-3.png)]
+.caption[Out-of-Distribution detection performance]
+]
+
+
+
+.citation[D. Hendrycks et al., Using Self-Supervised Learning Can Improve Model Robustness and Uncertainty, NIPS 2019; F. Ahmed & A. Courville, Detecting semantic anomalies, AAAI 2020]
+
+---
+
+count: false
+class: middle
+## .center[Towards better robustness and uncertainty]
+
+
+
+.grid[
+
+.kol-4-12[
+<br/><br/><br/>
+.center.width-80[![](images/part18/hendrycks-4.png)]
+.caption[Accuracy under adversarial attacks of varying strenghts $\varepsilon$]
+]
+
+.kol-8-12[
+
+.center.width-85[![](images/part18/hendrycks-2.png)]
+.caption[ Accuracy of usual training vs training with auxiliary rotation self-supervision on the 19 CIFAR-10-C corruptions.]
+]
+]
+
+.center.width-25[![](images/part18/hendrycks-3.png)]
+.caption[Out-of-Distribution detection performance]
+
+
+.citation[D. Hendrycks et al., Using Self-Supervised Learning Can Improve Model Robustness and Uncertainty, NIPS 2019; F. Ahmed & A. Courville, Detecting semantic anomalies, AAAI 2020]
+
+
+---
+
+class: middle
+
+## .center[Domain generalization and adaptation]
+
+.center.width-90[![](images/part18/jigen-1.png)]
+
+- Recognizing objects across visual domains requires high generalization abilities. 
+- Signals from pretext tasks allow to capture natural invariances and regularities in data. 
+
+
+.citation[F.M. Carlucci et al., Domain Generalization by Solving Jigsaw Puzzles, CVPR 2019]
+
+???
+- Signals from self-supervised pretext tasks allow to capture natural invariances and regularities in data that could mitigate large style gaps. 
+
+
+---
+
+class: middle
+
+.center.width-60[![](images/part18/jigen-2.png)]
+.caption[CAM activation maps: yellow corresponds to high values, while dark blue corresponds to low values.]
+
+The self-supervised pretext task enables localization of the most informative part of the image, useful for object class prediction regardless of the visual domain.
+
+.citation[F.M. Carlucci et al., Domain Generalization by Solving Jigsaw Puzzles, CVPR 2019]
+
+
+
+
+---
+
+class: middle
+
+## .center[Rotation for better GAN Discriminators]
+
+.grid[
+.kol-6-12[
+.center.width-100[![](images/part18/rot-gan.png)]
+.caption[Discriminator with rotation-based self-supervision. ]
+]
+
+.kol-6-12[
+<br/>
+<br/>
+- Add self-supervised auxiliary task to .italic[Discriminator]
+- Encourage the .italic[Discriminator] to learn meaningful feature representations which are not forgotten during training
+<!-- - Self-supervised unconditional GAN reaches similar performance to state-of-the-art conditional counterparts -->
+]
+]
+
+.citation[T. Chen et al., Self-Supervised GANs via Auxiliary Rotation Loss, CVPR 2019]
+
+???
+- Both the fake and real images are rotated by $0\degree$, $90\degree$, $180\degree$, and $270\degree$ degrees. The colored arrows indicate that only the upright images are considered for true vs. fake classification loss task. For the rotation loss, all images are classified by the discriminator according to their rotation degree.
+-  Self-supervised unconditional GAN reaches similar performance to state-of-the-art conditional counterparts
+
+---
+class: middle, center
+
+.big[Learn more about self-supervised learning in our CVPR 2020 tutorial:<br> .italic[Annotation Efficient Learning] <br> https://annotation-efficient-learning.github.io/]
+
+---
+
+
+class: middle, center
+
+# Today
+
+## Transfer learning
+
+## Off-the shelf networks
+
+## Fine-tuning
+
+## (Task) transfer learning
+
+## Multi-task learning
+
+## Domain adaptation
+
+## Self-supervised learning
+
+---
+
+class: end-slide, center
+count: false
+
+The end.
+
+
+
+</textarea> 
+  <script src="./assets/remark-latest.min.js"></script>
+  <script src="./assets/auto-render.min.js"></script>
+  <script src="./assets/katex.min.js"></script>
+  <script type="text/javascript">
+    function getParameterByName(name, url) {
+          if (!url) url = window.location.href;
+          name = name.replace(/[\[\]]/g, "\\$&");
+          var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+              results = regex.exec(url);
+          if (!results) return null;
+          if (!results[2]) return '';
+          return decodeURIComponent(results[2].replace(/\+/g, " "));
+      }
+
+      // var options = {sourceUrl: getParameterByName("p"),
+      //                highlightLanguage: "python",
+      //                // highlightStyle: "tomorrow",
+      //                // highlightStyle: "default",
+      //                highlightStyle: "github",
+      //                // highlightStyle: "googlecode",
+      //                // highlightStyle: "zenburn",
+      //                highlightSpans: true,
+      //                highlightLines: true,
+      //                ratio: "16:9"};
+      var options = {sourceUrl: getParameterByName("p"),
+                     highlightLanguage: "python",
+                     highlightStyle: "github",
+                     highlightSpans: true,
+                     highlightLines: true,
+                     ratio: "16:9",
+                     slideNumberFormat: (current, total) => `
+        <div class="progress-bar-container">${current}/${total}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/><br/>
+          <div class="progress-bar" style="width: ${current/total*100}%"></div>
+        </div>
+      `};
+
+       var renderMath = function() {
+          renderMathInElement(document.body, {delimiters: [ // mind the order of delimiters(!?)
+              {left: "$$", right: "$$", display: true},
+              {left: "$", right: "$", display: false},
+              {left: "\\[", right: "\\]", display: true},
+              {left: "\\(", right: "\\)", display: false},
+          ]});
+      }
+    var slideshow = remark.create(options, renderMath);
+  </script>
+  </body>
+</html>
+
