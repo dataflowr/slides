@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Deep Learning on Graphs  [Marc Lelarge]</title>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <link rel="stylesheet" href="./assets/katex.min.css">  
+   <link rel="stylesheet" type="text/css" href="./assets/slides.css">
+   <link rel="stylesheet" type="text/css" href="./assets/grid.css">    
+  </head>
+  <body>
+
+<textarea id="source">
+
+
+class: center, middle, title-slide
+count: false
+
+# Deep Learning on Graphs<br/>
+# (3/3)
+
+
+<br/><br/>
+.bold[Marc Lelarge]
+
+.bold[[www.dataflowr.com](https://www.dataflowr.com)]
+
+---
+
+# .gray[(1) Node embedding]
+
+## .gray[Language model]
+
+### .gray[one fixed graph, no signal. Ex: community detection]
+
+
+# .gray[(2) Signal processing on graphs]
+
+## .gray[Fourier analysis on graphs]
+
+### .gray[one fixed graph, various signals. Ex: classification of signals]
+
+# (3) Graph embedding
+
+## Graph Neural Networks
+
+### various graphs. Ex: classification of graphs
+
+---
+
+# Graph embedding
+
+## Graph Neural Networks
+
+### various graphs. Ex: classification of graphs
+
+--
+count: false
+
+
+Result of seeing an image where nodes are pixels and where we
+replace the grid by the complete graph:
+
+.center.width-80[![](images/graphs/permuted_image.png)]
+
+---
+
+# How to represent a graph?
+
+.center.width-60[![](images/graphs/isomorph.jpeg)]
+
+--
+count: false
+
+In graph theory, graph canonization is the problem of finding a canonical form of a given graph $G$ (i.e. every graph that is isomorphic to $G$ should have the same canonical form as $G$). 
+Thus, from a solution to the graph canonization problem, one could also solve the problem of graph isomorphism...
+
+---
+
+# Why graph symmetries matter?
+
+Start with a linear regression: your task is to estimate a linear model $\beta_1 x_1+\dots + \beta_n x_n$ from noisy observations $({\bf x},y)$.
+
+**Q:** How many parameters do you need to estimate if you know in addition that the model is .red[invariant] to permutation of the input $(x_1,\dots, x_n)$?
+
+--
+count: false
+
+*A:*  there is only one parameter to estimate because .red[invariance] implies $\beta_1=\dots=\beta_n$.
+
+--
+count: false
+
+**Q:** a linear regression on graphs: estimate a linear function of the adjacency matrix in $\mathbb{R}^{n\times n}$, how many parameters to estimate?
+
+--
+count: false
+
+*A:*  there are only two parameters to estimate for a linear function $f:\mathbb{R}^{n\times n}\to \mathbb{R}$ invariant to permutation of the rows and columns:
+$$
+f(A) = \alpha \sum\_{i=j}A\_{i,j}+\beta \sum\_{i =\not j}A\_{i,j},
+$$
+whatever the value of $n$!
+
+---
+
+# Invariant and equivariant functions
+
+We only consider algorithms whose result does not depend on the particular representation of the graph.
+
+--
+count: false
+
+Graphs are represented by their adjacency matrix $G\in \mathbb{F}^{n^2}$. 
+
+For $\sigma\in \mathcal{S}\_n$, we define: 
+- for $X\in \mathbb{F}^n$, $(\sigma \star X)\_{\sigma(i)} = X\_i$
+- for $G\in \mathbb{F}^{n^2}$, 
+$(\sigma \star G)\_{\sigma(i\_1),\sigma(i\_2)} = G\_{i\_1, i\_2}$.
+
+--
+count: false
+
+$G_1,G_2$ are isomorphic iff $G_1=\sigma \star G_2$.
+
+--
+count: false
+
+A function $f:\mathbb{F}^{n^k} \to \mathbb{F}$ is said to be .red[invariant] if $f(\sigma \star Z) = f(Z)$ for every permutation $\sigma$ and every $Z \in \mathbb{F}^{n^k}$, $k=1,2$.
+    
+A function $f:\mathbb{F}^{n^k} \to \mathbb{F}^{n}$ is said to be .red[equivariant] if $f(\sigma \star Z) = \sigma \star f(Z)$ for every permutation $\sigma$ and every $Z \in \mathbb{F}^{n^k}$, $k=1,2$.
+
+---
+
+# Message passing GNN (MGNN)
+
+.center.width-40[![](images/graphs/mgnnlayer.png)]
+
+.red[MGNN] takes as input a discrete graph $G=(V,E)$ with $n$ nodes and 
+features on the nodes $h^0\in \mathbb{F}^n$ and are defined inductively as: 
+$h^\ell\_i \in \mathbb{F}$ being the features at layer $\ell$ associated with node $i$, then
+$$
+h^{\ell+1}\_i = f\left( h\_i^\ell, \left[h\_j^\ell\right]\_{j\sim i}\right),
+$$
+where $f$ is a learnable function and $[\cdot]$ represents the multiset.
+
+--
+count: false
+
+The message passing layer $\mathbb{F}^n\to \mathbb{F}^n$ mapping the features $h^\ell$ at layer $\ell$
+to the features $h^{\ell+1}$ at layer $\ell+1$ is equivariant.
+
+---
+# The many flavors of MGNN
+
+The message passing layer can be expressed as (i.e. for each $f$ there exist $f\_0$ and $f\_1$ such that):
+$$
+h^{\ell+1}\_i = f\left( h\_i^\ell, \left[h\_j^\ell\right]\_{j\sim i}\right)= 
+f\_0\left(h\_i^\ell, \sum\_{j\sim i}f\_1\left( h^\ell\_i, h\_j^\ell\right)\right).
+$$
+
+By varying the functions $f\_0$ and $f\_1$, you get: [vanilla GCN](https://arxiv.org/abs/1609.02907), 
+[GraphSage](https://arxiv.org/abs/1706.02216), [Graph Attention Network](https://arxiv.org/abs/1710.10903), [MoNet](https://openaccess.thecvf.com/content_cvpr_2017/html/Monti_Geometric_Deep_Learning_CVPR_2017_paper.html), [Gated Graph ConvNet](https://arxiv.org/abs/1711.07553),
+[Graph Isomorphism Networks](https://arxiv.org/abs/1810.00826)...
+
+--
+count: false
+
+### A problem with regular graphs
+
+These GNNs are unable to distinguish $d$-regular graphs.
+
+--
+count: false
+
+### Another problematic pair .center.width-30[![](images/graphs/pbwl2.png)]
+
+---
+
+# Separating power
+
+Let $\mathcal{F}$ be a set of functions $f$ defined on a set $X$, 
+where each $f$ takes its values in some $Y\_f$. 
+The equivalence relation  $\rho(\mathcal{F})$ defined by $\mathcal{F}$ on $X$ is: for any $x, x' \in X$,
+$$
+(x, x') \in \rho({\mathcal{F}}) \iff \forall f\in \mathcal{F},\ f(x) = f(x')\,.
+$$
+
+Given two sets of functions $\mathcal{F}$ and $\mathcal{E}$, 
+we say that $\mathcal{F}$ is more separating than $\mathcal{E}$ 
+if $\rho(\mathcal{F}) \subset \rho(\mathcal{E})$.
+
+.center.width-30[![](images/graphs/separation.png)]
+
+--
+count: false
+
+## What is the separating power of MGNNs?
+---
+
+#  $2$-Weisfeiler-Lehman test
+
+.center.width-70[![](images/graphs/2wl.png)]
+
+Designed for the graph isomorphism problem, but non-isomorphic graphs might give the same output.
+
+--
+count: false
+.center.width-50[![](images/graphs/2wl2.png)]
+---
+
+# How powerful are GNNs
+
+MGNNs are as powerful as $2$-Weisfeiler-Lehman test:
+$$
+\rho(\text{MGNN}) = \rho(2\text{-WL})
+$$
+proved in [Xu et al. (2019)](https://arxiv.org/abs/1810.00826).
+
+--
+count: false
+
+## Consequence:
+
+.center.width-40[![](images/graphs/mgnnpb.png)]
+
+---
+
+# Results with GIN
+
+.center.width-80[![](images/graphs/result_GIN.png)]
+---
+
+# Graphs as higher order tensors
+
+.center.width-70[![](images/graphs/tensor3.png)]
+
+---
+
+# Invariant and equivariant linear operators
+
+For an order-$k$ tensor $T\in \mathbb{R}^{n^k}$, we define for $\sigma\in \mathcal{S}\_n$:
+$$
+(\sigma \star T)\_{\sigma(i\_1),...,\sigma(i\_k)} = T\_{i\_1,...,i\_k}.
+$$
+
+A high order tensor representation of a graph captures more information. 
+Hence, it is tempting to construct GNN with linear layers (LGNN)
+
+--
+count: false
+
+A function $f:\mathbb{R}^{n^k}\to\mathbb{R}$ is said to be .red[invariant] if $f(\sigma \star T) = f(T)$ for every permutation $\sigma$.
+
+A function $f:\mathbb{R}^{n^k}\to\mathbb{R^{n^\ell}}$ is said to be .red[equivariant] if $f(\sigma \star T) = \sigma\star f(T)$.
+
+--
+count: false
+
+There is a basis of $b(k+\ell)$ possible equivariant .red[linear] operators $f:\mathbb{R}^{n^k}\to\mathbb{R^{n^\ell}}$.
+
+The dimension of this space does not depend on the number of nodes $n$: the same linear layer can be applied on graphs of different sizes... but they cannot be very expressive.
+
+.citation[[Invariant and Equivariant Graph Networks](https://arxiv.org/abs/1812.09902)]
+
+---
+
+# Invariant linear GNN (LGNN)
+
+A linear invariant function $f:\mathbb{R}^{n}\to\mathbb{R}$ is of the form $f(x) = \alpha 1^Tx$.
+
+A linear equivariant function $f:\mathbb{R}^{n}\to\mathbb{R^n}$ is of the form $f(x) = [\alpha Id + \beta 11^T]x$.
+
+A linear invariant function $f:\mathbb{R}^{n\times n}\to\mathbb{R}$ is of the form
+
+--
+count: false
+$$
+f(A) = \alpha\sum\_{ i =\not j } A\_{i,j} + \beta \sum\_{i=j}A\_{i,j}.
+$$
+
+In order to get more expressive layer, we need to use tensor of higher order.
+
+[On the universality of invariant networks](https://arxiv.org/abs/1901.09342) shows that the minimal required order is $k\geq n^2$ in order to be able to approximate any invariant function.
+
+This is of little practical value... we need another approach!
+
+---
+# Folklore GNN (FGNN)
+
+Inspired by the folklore Weisfeiler-Lehman test, [Maron et al. (2019)](https://arxiv.org/abs/1905.11136) proposed the following layer:
+$$
+h^{\ell+1}\_{i\to j} = f\_0\left( h^\ell\_{i\to j} , \sum\_{k\in V} f\_1(h^\ell\_{i\to k}) \odot f\_2(h^\ell\_{k\to j})\right),
+$$
+where $f\_0, f\_1$ and $f\_2$ are learnable functions.
+
+--
+count: false
+
+They proved that FGNN have more separating power than MGNN and have the same separating power as LGNN with tensors of order $3$:
+$$
+\rho(\text{FGNN}) = \rho(3\text{-LGNN}) \subsetneq \rho(\text{MGNN})= \rho(2\text{-WL})
+$$
+
+More results available in [Azizian et al. (2021)](https://openreview.net/forum?id=lxHgXYN4bwl):
+FGNN has a better power of approximation among all architectures working with tensors of order $2$ presented so far.
+
+### Main drawback
+
+Dense matrix multiplication.
+---
+
+# .gray[(1) Node embedding]
+
+## .gray[Language model]
+
+### .gray[one fixed graph, no signal. Ex: community detection]
+
+
+# .gray[(2) Signal processing on graphs]
+
+## .gray[Fourier analysis on graphs]
+
+### .gray[one fixed graph, various signals. Ex: classification of signals]
+
+# (3) Graph embedding
+
+## Graph Neural Networks
+
+### various graphs. Ex: classification of graphs
+---
+class: end-slide, center
+count: false
+
+The end.
+
+.bold[[www.dataflowr.com](https://www.dataflowr.com)]
+
+</textarea> 
+<script src="./assets/remark-latest.min.js"></script>
+<script src="./assets/auto-render.min.js"></script>
+<script src="./assets/katex.min.js"></script>
+<script type="text/javascript">
+  function getParameterByName(name, url) {
+        if (!url) url = window.location.href;
+        name = name.replace(/[\[\]]/g, "\\$&");
+        var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+            results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, " "));
+    }
+
+    // var options = {sourceUrl: getParameterByName("p"),
+    //                highlightLanguage: "python",
+    //                // highlightStyle: "tomorrow",
+    //                // highlightStyle: "default",
+    //                highlightStyle: "github",
+    //                // highlightStyle: "googlecode",
+    //                // highlightStyle: "zenburn",
+    //                highlightSpans: true,
+    //                highlightLines: true,
+    //                ratio: "16:9"};
+    var options = {sourceUrl: getParameterByName("p"),
+                   highlightLanguage: "python",
+                   highlightStyle: "github",
+                   highlightSpans: true,
+                   highlightLines: true,
+                   ratio: "16:9",
+                   slideNumberFormat: (current, total) => `
+      <div class="progress-bar-container">${current}/${total}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/><br/>
+        <div class="progress-bar" style="width: ${current/total*100}%"></div>
+      </div>
+    `};
+
+     var renderMath = function() {
+        renderMathInElement(document.body, {delimiters: [ // mind the order of delimiters(!?)
+            {left: "$$", right: "$$", display: true},
+            {left: "$", right: "$", display: false},
+            {left: "\\[", right: "\\]", display: true},
+            {left: "\\(", right: "\\)", display: false},
+        ]});
+    }
+  var slideshow = remark.create(options, renderMath);
+</script>
+</body>
+</html>
