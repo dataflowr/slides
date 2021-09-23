@@ -370,16 +370,27 @@ The end.
           return decodeURIComponent(results[2].replace(/\+/g, " "));
       }
 
+      //var options = {sourceUrl: getParameterByName("p"),
+      //               highlightLanguage: "python",
+      //               // highlightStyle: "tomorrow",
+      //               // highlightStyle: "default",
+      //               highlightStyle: "github",
+      //               // highlightStyle: "googlecode",
+      //               // highlightStyle: "zenburn",
+      //               highlightSpans: true,
+      //               highlightLines: true,
+      //               ratio: "16:9"};
       var options = {sourceUrl: getParameterByName("p"),
                      highlightLanguage: "python",
-                     // highlightStyle: "tomorrow",
-                     // highlightStyle: "default",
                      highlightStyle: "github",
-                     // highlightStyle: "googlecode",
-                     // highlightStyle: "zenburn",
                      highlightSpans: true,
                      highlightLines: true,
-                     ratio: "16:9"};
+                     ratio: "16:9",
+                     slideNumberFormat: (current, total) => `
+        <div class="progress-bar-container">${current}/${total}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/><br/>
+          <div class="progress-bar" style="width: ${current/total*100}%"></div>
+        </div>
+      `};
 
       var renderMath = function() {
           renderMathInElement(document.body, {delimiters: [ // mind the order of delimiters(!?)
